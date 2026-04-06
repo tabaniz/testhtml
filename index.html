@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YGIT AVD Intelligence</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+	<script src="https://alcdn.msauth.net/browser/2.38.2/js/msal-browser.min.js"></script>
+</head>
+<body>
+    	<div id="app">
+
+	  <!-- ── Header ──────────────────────────────────────────────────── -->
+	  <div id="header">
+		<div class="brand">
+		  <div class="brand-icon">🖥</div>
+		  <div>
+			<div class="brand-name">YGIT <span>AVD</span> Intelligence</div>
+			<div class="brand-ver">v1.0 · AVD Deep Intelligence Platform</div>
+		  </div>
+		</div>
+		<div class="header-sep"></div>
+		<div class="header-meta" id="hdr-meta" style="display:none">
+		  <span><span class="lbl">SUB</span><span class="val" id="hdr-sub">—</span></span>
+		  <span><span class="lbl">TENANT</span><span class="val" id="hdr-tenant">—</span></span>
+		  <span><span class="lbl">COLLECTED</span><span class="val" id="hdr-col">—</span></span>
+		  <span><span class="lbl">LOCAL</span><span class="val" id="live-clock" style="color:var(--cyan);font-weight:600">--:--</span></span>
+		</div>
+		<div class="header-spacer"></div>
+		<span id="hdr-status" class="status-idle">AWAITING DATA</span>
+		<span id="kb-hint" style="display:none;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px" title="Keyboard shortcuts: 0=Overview, 1=Host Pools … 9=RG Inventory · / focus search · Esc close">⌨ 0-9 · /</span>
+		<button class="hdr-btn export-btn" onclick="openExportModal()" id="export-btn" style="display:none">📄 Build Report</button>
+		<button class="hdr-btn" onclick="document.getElementById('file-input').click()">📂 Load JSON</button>
+		<button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark / light mode">🌙</button>
+		<input type="file" id="file-input" accept=".json" onchange="loadFile(event)">
+	  </div>
+
+	  <!-- ── Body ────────────────────────────────────────────────────── -->
+	  <div id="body">
+
+		<!-- ── Sidebar ──────────────────────────────────────────────── -->
+		<div id="sidebar" style="display:none">
+		  <div class="role-strip" id="role-strip">
+			<div class="role-strip-label">View As</div>
+			<div class="role-btns">
+			  <button class="role-btn active" data-role="admin"   onclick="setRole('admin')"  ><span class="role-icon">🖥</span> AVD Admin</button>
+			  <button class="role-btn"        data-role="manager" onclick="setRole('manager')"><span class="role-icon">👔</span> Manager</button>
+			  <button class="role-btn"        data-role="sd"      onclick="setRole('sd')"     ><span class="role-icon">🎫</span> Service Desk</button>
+			  <button class="role-btn"        data-role="finops"  onclick="setRole('finops')" ><span class="role-icon">💰</span> FinOps</button>
+			</div>
+		  </div>
+		  <div class="nav-section-label">AVD Environment</div>
+		  <div class="nav-item active" data-view="overview" onclick="navTo('overview')"><span class="nav-icon">⬛</span> Overview<span class="nav-badge" id="nb-overview">—</span></div>
+		  <div class="nav-item" data-view="hostpools" onclick="navTo('hostpools')"><span class="nav-icon">🖥</span> Host Pools<span class="nav-badge" id="nb-hp">0</span></div>
+		  <div class="nav-item" data-view="scaling" onclick="navTo('scaling')"><span class="nav-icon">⚖</span> Scaling Plans<span class="nav-badge" id="nb-sp">0</span></div>
+		  <div class="nav-item" data-view="workspaces" onclick="navTo('workspaces')"><span class="nav-icon">⊞</span> Workspaces<span class="nav-badge" id="nb-ws">0</span></div>
+		  <div class="nav-divider"></div>
+		  <div class="nav-section-label">Applications</div>
+		  <div class="nav-item" data-view="appgroups" onclick="navTo('appgroups')"><span class="nav-icon">⊡</span> App Groups<span class="nav-badge" id="nb-ag">0</span></div>
+		  <div class="nav-item" data-view="applications" onclick="navTo('applications')"><span class="nav-icon">🚀</span> Applications<span class="nav-badge" id="nb-apps">0</span></div>
+		  <div class="nav-item" data-view="desktops" onclick="navTo('desktops')"><span class="nav-icon">🖵</span> Desktops<span class="nav-badge" id="nb-desk">0</span></div>
+		  <div class="nav-divider"></div>
+		  <div class="nav-section-label">Compute</div>
+		  <div class="nav-item" data-view="sessionhosts" onclick="navTo('sessionhosts')"><span class="nav-icon">💻</span> Session Hosts<span class="nav-badge" id="nb-sh">0</span></div>
+		  <div class="nav-item" data-view="sessions" onclick="navTo('sessions')"><span class="nav-icon">👤</span> User Sessions<span class="nav-badge" id="nb-sess">0</span></div>
+		  <div class="nav-divider"></div>
+		  <div class="nav-section-label">Configuration</div>
+		  <div class="nav-item" data-view="networking" onclick="navTo('networking')"><span class="nav-icon">🌐</span> Networking</div>
+		  <div class="nav-item" data-view="rbac" onclick="navTo('rbac')"><span class="nav-icon">🔑</span> RBAC<span class="nav-badge" id="nb-rbac">—</span></div>
+		  <div class="nav-divider"></div>
+		  <div class="nav-section-label">Intelligence</div>
+		  <div class="nav-item" data-view="intelligence" onclick="navTo('intelligence')"><span class="nav-icon">🧠</span> KQL Analytics<span class="nav-badge" id="nb-kql">—</span></div>
+		  <div class="nav-item" data-view="fslogix" onclick="navTo('fslogix')"><span class="nav-icon">📦</span> FSLogix<span class="nav-badge" id="nb-fsl">—</span></div>
+		  <div class="nav-item" data-view="cost" onclick="navTo('cost')"><span class="nav-icon">💰</span> Cost &amp; FinOps<span class="nav-badge" id="nb-cost">—</span></div>
+		  <div class="nav-divider"></div>
+		  <div class="nav-section-label">Inventory</div>
+		  <div class="nav-item" data-view="rginventory" onclick="navTo('rginventory')"><span class="nav-icon">📋</span> RG Inventory<span class="nav-badge" id="nb-rg">—</span></div>
+		</div>
+
+		<!-- ── Main ─────────────────────────────────────────────────── -->
+		<div id="main">
+		  <!-- ═══ LANDING PAGE ══════════════════════════════════════════ -->
+		  <div id="landing">
+
+			<!-- Hero -->
+			<div class="lp-hero">
+			  <div class="lp-ygit-badge"><span class="lp-ygit-dot"></span>YGIT Toolkit · AVD Intelligence v5.0</div>
+			  <div class="lp-title">YGIT <span>AVD</span></div>
+			  <div class="lp-product">Intelligence Platform</div>
+			  <div class="lp-tagline">Deep visibility into your Azure Virtual Desktop environment</div>
+			</div>
+
+			<!-- Mode cards -->
+			<div class="lp-modes">
+
+			  <!-- API / Connect Live -->
+			  <div class="lp-mode-card mode-api">
+				<div class="lp-mode-header">
+				  <div class="lp-mode-icon">⚡</div>
+				  <div style="flex:1">
+					<div class="lp-mode-name">Connect Live</div>
+					<div class="lp-mode-sub">Browser OAuth · Azure ARM API · No PS1 required</div>
+				  </div>
+				  <div class="lp-mode-badge">API MODE</div>
+				</div>
+				<ul class="lp-capability-list">
+				  <li><span class="lp-cap-icon">✓</span>All AVD resources — host pools, workspaces, app groups, scaling plans</li>
+				  <li><span class="lp-cap-icon">✓</span>Session host status, agent version, heartbeat, drain mode</li>
+				  <li><span class="lp-cap-icon">✓</span>Active &amp; disconnected user sessions with user UPN</li>
+				  <li><span class="lp-cap-icon">✓</span>VM details — size, OS, power state, network interfaces</li>
+				  <li><span class="lp-cap-icon">✓</span>RDP properties, registration token status</li>
+				  <li><span class="lp-cap-icon">✓</span>RBAC assignments across all AVD resources</li>
+				  <li><span class="lp-cap-icon">✓</span>Cost Management API — cost per resource MTD</li>
+				  <li><span class="lp-cap-icon">✓</span>Diagnostic settings coverage</li>
+				</ul>
+				<button class="lp-mode-btn coming-soon" disabled>
+				  ⚡ Connect to Azure &nbsp;<span class="lp-coming-tag">COMING v2</span>
+				</button>
+			  </div>
+
+			  <!-- PS1 / Deep Snapshot -->
+			  <div class="lp-mode-card mode-ps1">
+				<div class="lp-mode-header">
+				  <div class="lp-mode-icon">🧠</div>
+				  <div style="flex:1">
+					<div class="lp-mode-name">Deep Snapshot</div>
+					<div class="lp-mode-sub">PS1 collector · Full intelligence · Portable JSON</div>
+				  </div>
+				  <div class="lp-mode-badge">PS1 MODE</div>
+				</div>
+				<ul class="lp-capability-list">
+				  <li><span class="lp-cap-icon">✓</span>Everything in Connect Live, plus:</li>
+				  <li><span class="lp-cap-icon">✓</span>KQL analytics — logon duration, connection success rate</li>
+				  <li><span class="lp-cap-icon">✓</span>CPU &amp; RAM performance counters per session host</li>
+				  <li><span class="lp-cap-icon">✓</span>FSLogix detection via VM extensions + slow mount analysis</li>
+				  <li><span class="lp-cap-icon">✓</span>Image drift detection across host pools</li>
+				  <li><span class="lp-cap-icon">✓</span>Agent health failures &amp; unstable host detection</li>
+				  <li><span class="lp-cap-icon">✓</span>Wasted spend analysis — idle &amp; drain-mode hosts</li>
+				  <li><span class="lp-cap-icon">✓</span>Portable snapshot — save to Blob, SharePoint, or local</li>
+				</ul>
+				<div class="lp-drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+				  <div style="font-size:24px;opacity:0.6">📂</div>
+				  <p>Click to load or drag &amp; drop your <strong>YGIT-AVDIntelligence_*.json</strong></p>
+				</div>
+			  </div>
+
+			  <!-- Lite / Quick Report -->
+			  <div class="lp-mode-card mode-lite">
+				<div class="lp-mode-header">
+				  <div class="lp-mode-icon">📋</div>
+				  <div style="flex:1">
+					<div class="lp-mode-name">Quick Report</div>
+					<div class="lp-mode-sub">Browser OAuth · Azure ARM API · No PS1 needed</div>
+				  </div>
+				  <div class="lp-mode-badge">LITE MODE</div>
+				</div>
+				<ul class="lp-capability-list">
+				  <li><span class="lp-cap-icon">✓</span>Connect → report → download in under 5 minutes</li>
+				  <li><span class="lp-cap-icon">✓</span>Host pools, workspaces, app groups &amp; published apps</li>
+				  <li><span class="lp-cap-icon">✓</span>Session hosts, user sessions &amp; RBAC assignments</li>
+				  <li><span class="lp-cap-icon">✓</span>Live data — direct Azure ARM API, no file upload</li>
+				  <li><span class="lp-cap-icon">✓</span>No sidebar — straight to report builder &amp; export</li>
+				  <li><span class="lp-cap-icon">✓</span>Ideal for recurring client documentation</li>
+				  <li><span class="lp-cap-icon" style="color:var(--text-muted)">—</span><span style="color:var(--text-muted)">No KQL analytics, no cost data</span></li>
+				  <li><span class="lp-cap-icon" style="color:var(--text-muted)">—</span><span style="color:var(--text-muted)">No Entra ID display name resolution (coming soon)</span></li>
+				</ul>
+				<button class="lp-mode-btn" onclick="startQuickReport()">
+				  📋 Generate Quick Report
+				</button>
+			  </div>
+			</div>
+
+			<!-- How it works — API mode -->
+			<div class="lp-how">
+			  <div class="lp-how-title mode-api-steps">⚡ &nbsp;Connect Live — how it works</div>
+			  <div class="lp-steps mode-api-steps">
+				<div class="lp-step"><div class="lp-step-num">1</div><div class="lp-step-txt">Click Connect to Azure</div></div>
+				<div class="lp-step"><div class="lp-step-num">2</div><div class="lp-step-txt">Sign in with your Azure account</div></div>
+				<div class="lp-step"><div class="lp-step-num">3</div><div class="lp-step-txt">Grant read-only consent</div></div>
+				<div class="lp-step"><div class="lp-step-num">4</div><div class="lp-step-txt">Explore your live AVD environment</div></div>
+				<div class="lp-step"><div class="lp-step-num">5</div><div class="lp-step-txt">Export documentation instantly</div></div>
+			  </div>
+			</div>
+
+			<!-- How it works — PS1 mode -->
+			<div class="lp-how">
+			  <div class="lp-how-title mode-ps1-steps">🧠 &nbsp;Deep Snapshot — how it works</div>
+			  <div class="lp-steps mode-ps1-steps">
+				<div class="lp-step"><div class="lp-step-num">1</div><div class="lp-step-txt">Open Azure Cloud Shell</div></div>
+				<div class="lp-step"><div class="lp-step-num">2</div><div class="lp-step-txt">Run YGIT-AVDIntelligence.ps1</div></div>
+				<div class="lp-step"><div class="lp-step-num">3</div><div class="lp-step-txt">Download the JSON output</div></div>
+				<div class="lp-step"><div class="lp-step-num">4</div><div class="lp-step-txt">Load it here to explore</div></div>
+				<div class="lp-step"><div class="lp-step-num">5</div><div class="lp-step-txt">Export full documentation</div></div>
+			  </div>
+			</div>
+
+			<!-- How it works — Lite / Quick Report mode -->
+			<div class="lp-how">
+			  <div class="lp-how-title mode-lite-steps">📋 &nbsp;Quick Report — how it works</div>
+			  <div class="lp-steps mode-lite-steps">
+				<div class="lp-step"><div class="lp-step-num">1</div><div class="lp-step-txt">Click Connect to Azure</div></div>
+				<div class="lp-step"><div class="lp-step-num">2</div><div class="lp-step-txt">Sign in with your Azure account</div></div>
+				<div class="lp-step"><div class="lp-step-num">3</div><div class="lp-step-txt">Grant read-only consent</div></div>
+				<div class="lp-step"><div class="lp-step-num">4</div><div class="lp-step-txt">Export documentation instantly</div></div>
+			  </div>
+			</div>
+
+			<!-- Privacy statement -->
+			<div class="lp-privacy">
+			  <span class="lp-privacy-icon">🔒</span>
+			  Everything stays in your browser — no servers, no telemetry. Your Azure data never leaves your tenant.
+			</div>
+
+		  </div>
+		  <!-- ═══ END LANDING ══════════════════════════════════════════ -->
+		  <!-- Stale data banner — shown/hidden by JS -->
+		  <div id="stale-banner" class="stale-banner" style="display:none">
+			<span class="stale-banner-icon">⚠</span>
+			<span class="stale-banner-text" id="stale-banner-text">Data collected some time ago — consider re-running the collector for current data.</span>
+			<button class="stale-banner-dismiss" onclick="this.parentElement.style.display='none'" title="Dismiss">✕</button>
+		  </div>
+		  <div class="view" id="view-overview"></div>
+		  <div class="view" id="view-hostpools"></div>
+		  <div class="view" id="view-scaling"></div>
+		  <div class="view" id="view-workspaces"></div>
+		  <div class="view" id="view-appgroups"></div>
+		  <div class="view" id="view-applications"></div>
+		  <div class="view" id="view-desktops"></div>
+		  <div class="view" id="view-sessionhosts"></div>
+		  <div class="view" id="view-sessions"></div>
+		  <div class="view" id="view-networking"></div>
+		  <div class="view" id="view-rbac"></div>
+		  <div class="view" id="view-intelligence"></div>
+		  <div class="view" id="view-fslogix"></div>
+		  <div class="view" id="view-cost"></div>
+		  <div class="view" id="view-rginventory"></div>
+		</div>
+	  </div>
+	</div>
+
+	<!-- Flyout -->
+	<div class="flyout-overlay" id="flyout-overlay" onclick="if(event.target===this)closeFlyout()">
+	  <div class="flyout-panel">
+		<div class="flyout-header">
+		  <div class="flyout-title" id="flyout-title"></div>
+		  <button class="flyout-close" onclick="closeFlyout()">✕</button>
+		</div>
+		<div class="flyout-body" id="flyout-body"></div>
+	  </div>
+	</div>
+
+	<!-- ═══ REPORT BUILDER MODAL ═══════════════════════════════════════ -->
+	<div class="modal-overlay" id="export-modal" onclick="if(event.target===this)closeExportModal()">
+	  <div class="rb-shell">
+
+		<!-- Header -->
+		<div class="rb-header">
+		  <div class="rb-title">⬇ Report Builder</div>
+		  <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)" id="rb-env-label">—</span>
+		  <button class="flyout-close" onclick="closeExportModal()" style="margin-left:8px">✕</button>
+		</div>
+
+		<!-- Body: left config + right preview -->
+		<div class="rb-body">
+
+		  <!-- ── Left: Configuration ── -->
+		  <div class="rb-config">
+
+			<!-- Format -->
+			<div class="rb-section">
+			  <div class="rb-section-title">Export Format</div>
+			  <div class="rb-fmt-strip">
+				<div class="rb-fmt-btn active" id="rbfmt-markdown" onclick="rbSetFmt('markdown')">
+				  <span class="rb-fmt-icon">📝</span>
+				  <div class="rb-fmt-name">Markdown</div>
+				  <div class="rb-fmt-ext">.md</div>
+				</div>
+				<div class="rb-fmt-btn" id="rbfmt-html" onclick="rbSetFmt('html')">
+				  <span class="rb-fmt-icon">🌐</span>
+				  <div class="rb-fmt-name">HTML</div>
+				  <div class="rb-fmt-ext">.html</div>
+				</div>
+				<div class="rb-fmt-btn" id="rbfmt-pdf" onclick="rbSetFmt('pdf')">
+				  <span class="rb-fmt-icon">📄</span>
+				  <div class="rb-fmt-name">PDF</div>
+				  <div class="rb-fmt-ext">print</div>
+				</div>
+				<div class="rb-fmt-btn" id="rbfmt-word" onclick="rbSetFmt('word')">
+				  <span class="rb-fmt-icon">📘</span>
+				  <div class="rb-fmt-name">Word</div>
+				  <div class="rb-fmt-ext">.docx</div>
+				</div>
+			  </div>
+			</div>
+
+			<!-- Document metadata -->
+			<div class="rb-section">
+			  <div class="rb-section-title">Document Details</div>
+			  <div class="rb-field">
+				<label class="rb-label">Client / Organisation</label>
+				<input class="rb-input" id="rb-client" placeholder="e.g. Contoso Ltd" oninput="rbMarkDirty()">
+			  </div>
+			  <div class="rb-field">
+				<label class="rb-label">Document Subtitle</label>
+				<input class="rb-input" id="rb-subtitle" placeholder="Azure Virtual Desktop Environment Document" value="Azure Virtual Desktop Environment Document" oninput="rbMarkDirty()">
+			  </div>
+			  <div class="rb-field" id="rb-field-env">
+				<label class="rb-label">Environment Name</label>
+				<input class="rb-input" id="rb-env" placeholder="e.g. Production AVD" oninput="rbMarkDirty()">
+			  </div>
+			  <div class="rb-field">
+				<label class="rb-label">Prepared By</label>
+				<input class="rb-input" id="rb-author" placeholder="Engineer name" oninput="rbMarkDirty()">
+			  </div>
+			  <div class="rb-field">
+				<label class="rb-label">Version</label>
+				<input class="rb-input" id="rb-version" placeholder="v1.0" value="v1.0" oninput="rbMarkDirty()">
+			  </div>
+			  <div class="rb-field" id="rb-field-date">
+				<label class="rb-label">Review Date</label>
+				<input class="rb-input" id="rb-date" oninput="rbMarkDirty()">
+			  </div>
+			  <div class="rb-field">
+				<label class="rb-label">Company Logo <span style="color:var(--text-dim)">(optional)</span></label>
+				<!-- Logo preview strip -->
+				<div id="rb-logo-preview" style="display:none;align-items:center;gap:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;">
+				  <img id="rb-logo-img" src="" alt="Logo" style="max-height:36px;max-width:100px;object-fit:contain;border-radius:3px;">
+				  <span style="font-family:var(--font-mono);font-size:9px;color:var(--green);flex:1" id="rb-logo-status">Logo loaded</span>
+				  <button onclick="rbClearLogo()" style="background:none;border:1px solid var(--border);border-radius:3px;color:var(--text-muted);font-size:10px;cursor:pointer;padding:2px 7px;">✕</button>
+				</div>
+				<!-- File upload button -->
+				<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:5px;">
+				  <input type="file" id="rb-logo-file" accept="image/*,.svg" style="display:none" onchange="rbLogoFileChange(event)">
+				  <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);flex:1;transition:border-color 0.15s;" id="rb-logo-file-label">📁 Upload JPG / PNG / SVG…</div>
+				</label>
+				<!-- URL fallback -->
+				<input class="rb-input" id="rb-logo" placeholder="…or paste a logo URL (https://...)" oninput="rbLogoUrlChange(this.value)" style="font-size:10px;">
+				<input type="hidden" id="rb-logo-data" value="">
+			  </div>
+			  <div class="rb-field" id="rb-field-exec-style">
+				<label class="rb-label">Executive Summary Style</label>
+				<div style="font-size:10px;color:var(--text-muted);font-style:italic;margin-bottom:4px">Select the executive summary that best fits the client audience. If unsure, use the Universal Executive Summary.</div>
+				<div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-exec-style" value="0" checked onchange="rbExecChange()"> <span>Universal — suitable for any audience</span></label>
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-exec-style" value="1" onchange="rbExecChange()"> <span>Option 1 — Balanced & professional</span></label>
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-exec-style" value="2" onchange="rbExecChange()"> <span>Option 2 — User-experience focused</span></label>
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-exec-style" value="3" onchange="rbExecChange()"> <span>Option 3 — Executive concise</span></label>
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-exec-style" value="4" onchange="rbExecChange()"> <span>Option 4 — Governance focused</span></label>
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-exec-style" value="5" onchange="rbExecChange()"> <span>Option 5 — Client reassurance</span></label>
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-exec-style" value="6" onchange="rbExecChange()"> <span>Option 6 — Conversational</span></label>
+				</div>
+			  </div>
+			  <div class="rb-field">
+				<label class="rb-label">Executive Summary Text</label>
+				<textarea class="rb-input" id="rb-exec-text" oninput="rbMarkDirty()" style="min-height:120px"></textarea>
+			  </div>
+			  <div class="rb-field">
+				<label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer">
+				  <input type="checkbox" id="rb-disclaimer" checked onchange="rbMarkDirty()">
+				  <span class="rb-label" style="margin:0">Include disclaimer</span>
+				</label>
+				<div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-style:italic">This document reflects the environment and observed behaviour at the time of review and is intended for informational and operational reference purposes.</div>
+			  </div>
+			  <div class="rb-field" id="rb-field-findings-sentence">
+				<label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer">
+				  <input type="checkbox" id="rb-findings-sentence" checked onchange="rbMarkDirty()">
+				  <span class="rb-label" style="margin:0">Include findings count in executive summary</span>
+				</label>
+				<div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-style:italic">e.g. "X configuration findings were identified — see Configuration Findings section."</div>
+			  </div>
+			  <div class="rb-field" id="rb-field-closing-para">
+				<label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer">
+				  <input type="checkbox" id="rb-closing-para" checked onchange="rbMarkDirty()">
+				  <span class="rb-label" style="margin:0">Include closing paragraph</span>
+				</label>
+				<div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-style:italic">The Azure Virtual Desktop environment described in this document is operating as a stable and supported service, with monitoring and governance controls in place. As usage patterns evolve, the platform is intended to be continuously reviewed and optimised based on operational data, rather than treated as a fixed, point‑in‑time deployment.</div>
+			  </div>
+			  <div class="rb-field" id="rb-field-kf">
+				<label class="rb-label">Key Findings</label>
+				<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-kf-style" value="0" checked onchange="rbKFChange()"> <span>None</span></label>
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-kf-style" value="1" onchange="rbKFChange()"> <span>Option 1 — Balanced</span></label>
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-kf-style" value="2" onchange="rbKFChange()"> <span>Option 2 — Metrics-driven</span></label>
+				</div>
+				<textarea class="rb-input" id="rb-kf-text" placeholder="Select an option above to pre-fill, or type your own..." oninput="rbMarkDirty()" style="min-height:80px;margin-top:6px;display:none"></textarea>
+			  </div>
+			  <div class="rb-field" id="rb-field-fi">
+				<label class="rb-label">Future Improvements</label>
+				<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-fi-style" value="0" checked onchange="rbFIChange()"> <span>None</span></label>
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-fi-style" value="1" onchange="rbFIChange()"> <span>Option 1 — Practical & reassuring</span></label>
+				  <label style="font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="rb-fi-style" value="2" onchange="rbFIChange()"> <span>Option 2 — Strategic & roadmap</span></label>
+				</div>
+				<textarea class="rb-input" id="rb-fi-text" placeholder="Select an option above to pre-fill, or type your own..." oninput="rbMarkDirty()" style="min-height:80px;margin-top:6px;display:none"></textarea>
+			  </div>
+			  <div class="rb-field" id="rb-field-scope">
+				<label class="rb-label">Document Scope</label>
+				<textarea class="rb-input" id="rb-scope" placeholder="e.g. This document covers the Production AVD environment for Contoso Ltd, assessed on [date]. It includes host pool configuration, user access, and operational health." oninput="rbMarkDirty()" style="min-height:64px"></textarea>
+			  </div>
+			  <div class="rb-field" id="rb-field-notes">
+				<label class="rb-label">Notes / Context</label>
+				<textarea class="rb-input" id="rb-notes" placeholder="Any additional context for the document..." oninput="rbMarkDirty()"></textarea>
+			  </div>
+			</div>
+
+			<!-- Sections -->
+			<div class="rb-section" style="flex:1">
+			  <div class="rb-section-title">Include Sections</div>
+			  <div class="rb-sec-controls">
+				<span class="rb-sec-ctrl ctrl-all" onclick="rbSetAllSec(true)">Select All</span>
+				<span class="rb-sec-ctrl" onclick="rbSetAllSec(false)">None</span>
+				<span class="rb-sec-ctrl ctrl-defaults" onclick="rbSetDefaults()">Defaults</span>
+			  </div>
+			  <div id="rb-sec-list"></div>
+			</div>
+
+			<!-- Live summary -->
+			<div class="rb-summary">
+			  <div class="rb-sum-row"><span class="rb-sum-key">Format</span><span class="rb-sum-val" id="rbs-fmt">—</span></div>
+			  <div class="rb-sum-row"><span class="rb-sum-key">Sections</span><span class="rb-sum-val" id="rbs-secs">—</span></div>
+			  <div class="rb-sum-row"><span class="rb-sum-key">Environment</span><span class="rb-sum-val" id="rbs-env">—</span></div>
+			</div>
+
+			<!-- Action buttons -->
+			<div class="rb-actions">
+			  <button class="rb-btn rb-btn-preview needs-refresh" id="rb-preview-btn" onclick="rbRenderPreview()">
+				👁 Preview Document
+			  </button>
+			  <button class="rb-btn rb-btn-export" onclick="rbDoExport()">
+				⬇ Download
+			  </button>
+			  <button class="rb-btn rb-btn-close" onclick="closeExportModal()">
+				Cancel
+			  </button>
+			</div>
+		  </div>
+
+		  <!-- ── Right: Preview ── -->
+		  <div class="rb-preview">
+			<div class="rb-preview-bar">
+			  <span class="rb-preview-label">Document Preview</span>
+			  <span class="rb-preview-format" id="rb-prev-fmt">HTML</span>
+			  <span class="rb-preview-spacer"></span>
+			  <span class="rb-preview-hint">Click "Preview Document" to render</span>
+			</div>
+			<div class="rb-preview-placeholder" id="rb-placeholder">
+			  <div class="rb-preview-placeholder-icon">📄</div>
+			  <div class="rb-preview-placeholder-text">
+				Configure your document on the left<br>
+				then click <strong>Preview Document</strong><br>
+				to see a live render before downloading
+			  </div>
+			</div>
+			<iframe id="rb-iframe" style="display:none"></iframe>
+		  </div>
+
+		</div><!-- end rb-body -->
+	  </div><!-- end rb-shell -->
+	</div>
+	<!-- ═══ END REPORT BUILDER ══════════════════════════════════════════ -->
+
+
+    <script src="script.js"></script>
+</body>
+</html>
